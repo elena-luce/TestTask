@@ -1,11 +1,11 @@
 #include <QApplication>
 
-#include "myclient.h"
+#include "mainwindow.h"
 
 int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
-    MyClient     client("localhost", 2323);
+    MainWindow     client("localhost", 2323);
 
     client.show();
 
