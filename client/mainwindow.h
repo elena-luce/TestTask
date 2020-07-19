@@ -3,6 +3,7 @@
 
 #include "ui_mainwindow.h"
 
+#include <QFileSystemModel>
 #include <QMainWindow>
 #include <QTcpSocket>
 #include <QTextEdit>
@@ -11,6 +12,7 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QTime>
+
 
 //QT_BEGIN_NAMESPACE
 //namespace Ui { class MainWindow; }
@@ -24,15 +26,22 @@ private:
 //    QLineEdit*  m_ptxtInput;
     quint16     m_nNextBlockSize;
     Ui::MainWindow *ui;
+    QFileSystemModel *model;
 
 public:
     MainWindow(const QString& strHost, int nPort, QWidget* parent = 0);
     ~MainWindow();
+    void ViewDir();
 
 private slots:
     void slotReadyRead();
     void slotError(QAbstractSocket::SocketError err);
     void slotSendToServer();
     void slotConnected();
+//    void on_pushButton_clicked();
+    void on_listIm_doubleClicked(const QModelIndex &index);
 };
+
+//возвращает все элементы внутри dir
+void ContentList(QDir &dir, QFileInfoList &contentList);
 #endif // MAINWINDOW_H

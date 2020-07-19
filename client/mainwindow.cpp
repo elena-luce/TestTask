@@ -20,9 +20,15 @@ MainWindow::MainWindow(const QString& strHost, int nPort, QWidget* parent) : QMa
     connect(ui->m_ptxtInput, SIGNAL(returnPressed()), this, SLOT(slotSendToServer()));
 
     ui->m_ptxtInfo->setReadOnly(true);
-    ui->pcmd->setText("&Send");
+//    ui->pcmd->setText("&Send");
 
     connect(ui->pcmd, SIGNAL(clicked()), SLOT(slotSendToServer()));
+
+    model = new QFileSystemModel(this);
+    model->setFilter(QDir::Files|QDir::Dirs|QDir::NoDot);
+    model->setRootPath("");
+    ui->listIm->setModel(model);
+    ui->listIm->setRootIndex(model->index("/home/helena/Загрузки/Изображения"));
 
     ui->label->setText("<H1>Client</H1>");
 }
@@ -30,6 +36,14 @@ MainWindow::MainWindow(const QString& strHost, int nPort, QWidget* parent) : QMa
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::ViewDir()
+{
+    QModelIndex index = ui->listIm->selectionModel()->currentIndex();
+    QFileInfo fileInfo = model->fileInfo(index);
+    QString path = fileInfo.absoluteFilePath();
+//    ui->lineEdit_1->setText(path);
 }
 
 void MainWindow::slotReadyRead()
@@ -87,4 +101,34 @@ void MainWindow::slotSendToServer()
 void MainWindow::slotConnected()
 {
     ui->m_ptxtInfo->append("Received the connected() signal");
+}
+
+//void MainWindow::on_pushButton_clicked()
+//{
+
+//}
+
+void ContentList(QDir &dir, QFileInfoList &contentList)
+{
+    foreach(QFileInfo info, dir.entryInfoList(QDir::Files|QDir::Dirs|QDir::NoDot, QDir::Name|QDir::DirsFirst)){
+        contentList.append(info);
+        if(info.isDir() && dir.cd(info.fileName())){
+            ContentList(dir, contentList);
+            dir.cdUp();
+        }
+    }
+}
+
+void MainWindow::on_listIm_doubleClicked(const QModelIndex &index)
+{
+    QListView * listView = (QListView*)sender();
+    QFileInfo fileInfo = model->fileInfo(index);
+    if(fileInfo.fileName() == ".."){
+        QDir dir = fileInfo.dir();
+        dir.cdUp();//можно также cd("..")
+        listView->setRootIndex(model->index(dir.absolutePath()));
+    }
+    else if (fileInfo.isDir()) {
+        listView->setRootIndex(index);
+    }
 }
