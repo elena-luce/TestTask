@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "ui_mainwindow.h"
+#include "viewim.h"
 
 #include <QFileSystemModel>
 #include <QMainWindow>
@@ -10,6 +11,8 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QMessageBox>
+#include <QDirIterator>
 #include <QLabel>
 #include <QTime>
 
@@ -31,15 +34,15 @@ private:
 public:
     MainWindow(const QString& strHost, int nPort, QWidget* parent = 0);
     ~MainWindow();
-    void ViewDir();
 
 private slots:
     void slotReadyRead();
     void slotError(QAbstractSocket::SocketError err);
     void slotSendToServer();
     void slotConnected();
-//    void on_pushButton_clicked();
     void on_listIm_doubleClicked(const QModelIndex &index);
+    void on_viewButton_clicked();
+    void on_downloadBtn_clicked();
 };
 
 //возвращает все элементы внутри dir

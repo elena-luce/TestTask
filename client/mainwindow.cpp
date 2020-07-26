@@ -27,23 +27,15 @@ MainWindow::MainWindow(const QString& strHost, int nPort, QWidget* parent) : QMa
     model = new QFileSystemModel(this);
     model->setFilter(QDir::Files|QDir::Dirs|QDir::NoDot);
     model->setRootPath("");
+
     ui->listIm->setModel(model);
     ui->listIm->setRootIndex(model->index("/home/helena/Загрузки/Изображения"));
-
     ui->label->setText("<H1>Client</H1>");
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
-}
-
-void MainWindow::ViewDir()
-{
-    QModelIndex index = ui->listIm->selectionModel()->currentIndex();
-    QFileInfo fileInfo = model->fileInfo(index);
-    QString path = fileInfo.absoluteFilePath();
-//    ui->lineEdit_1->setText(path);
 }
 
 void MainWindow::slotReadyRead()
@@ -103,10 +95,6 @@ void MainWindow::slotConnected()
     ui->m_ptxtInfo->append("Received the connected() signal");
 }
 
-//void MainWindow::on_pushButton_clicked()
-//{
-
-//}
 
 void ContentList(QDir &dir, QFileInfoList &contentList)
 {
@@ -131,4 +119,71 @@ void MainWindow::on_listIm_doubleClicked(const QModelIndex &index)
     else if (fileInfo.isDir()) {
         listView->setRootIndex(index);
     }
+}
+
+void MainWindow::on_viewButton_clicked()
+{
+    QModelIndex index = ui->listIm->selectionModel()->currentIndex();
+    QFileInfo fileInfo = model->fileInfo(index);
+    QString path = fileInfo.absoluteFilePath();
+    if(fileInfo.isFile())
+    {
+        QFile file(path);
+
+//        QLabel imLabel = new QLabel();
+        ViewIm viewIm(path, this);
+        viewIm.exec();
+    }
+
+}
+
+void Copy(QFileInfo Info, QDir sourceDir, QDir destDir)
+{
+    QString Name = Info.fileName();
+    QString Path = Info.absoluteFilePath();
+    if(Name == ".." | Name == ".")
+    {
+        QMessageBox box;
+        box.setWindowTitle("Ошибка");
+        box.setText("Выберите файл для скачивания");
+        box.exec();
+    }
+    else
+    {
+        QString backupPath = Info.filePath().replace(sourceDir.absolutePath(), destDir.absolutePath());
+        if(Info.isFile())
+        {
+            QFile::copy(Path, backupPath);
+        }
+        if(Info.isDir())
+        {
+            destDir.mkdir(backupPath);
+            destDir.cd(backupPath);
+            if (!sourceDir.isEmpty())
+            {
+                qDebug() << sourceDir;
+                sourceDir.cd(Path);
+                Name = sourceDir.dirName();
+                qDebug() << Name;
+                Path = sourceDir.absolutePath();
+                qDebug() << Path;
+                foreach(Info, sourceDir.entryInfoList(QDir::Files|QDir::Dirs|QDir::NoDotAndDotDot, QDir::Name|QDir::DirsFirst))
+                {
+                    qDebug() << Info;
+                    Copy(Info,sourceDir,destDir);
+                }
+
+            }
+        }
+
+    }
+}
+
+void MainWindow::on_downloadBtn_clicked()
+{
+    QModelIndex index = ui->listIm->selectionModel()->currentIndex();
+    QFileInfo fileInfo = model->fileInfo(index);
+    QDir sDir = QDir(fileInfo.path());
+    QDir dDir = QDir("/home/helena/Загрузки/Client");
+    Copy(fileInfo,sDir,dDir);
 }
