@@ -23,6 +23,7 @@ MainWindow::MainWindow(const QString& strHost, int nPort, QWidget* parent) : QMa
 //    ui->pcmd->setText("&Send");
 
     connect(ui->pcmd, SIGNAL(clicked()), SLOT(slotSendToServer()));
+    connect(ui->sendFileBtn, SIGNAL(clicked()), SLOT(slotSendFile()));
 
     model = new QFileSystemModel(this);
     model->setFilter(QDir::Files|QDir::Dirs|QDir::NoDot);
@@ -31,6 +32,8 @@ MainWindow::MainWindow(const QString& strHost, int nPort, QWidget* parent) : QMa
     ui->listIm->setModel(model);
     ui->listIm->setRootIndex(model->index("/home/helena/Загрузки/Изображения"));
     ui->label->setText("<H1>Client</H1>");
+    ui->prBrfileSend->setValue(0);
+
 }
 
 MainWindow::~MainWindow()
@@ -41,7 +44,7 @@ MainWindow::~MainWindow()
 void MainWindow::slotReadyRead()
 {
     QDataStream in(m_pTcpSocket);
-    in.setVersion(QDataStream::Qt_4_2);
+    in.setVersion(QDataStream::Qt_DefaultCompiledVersion);
     for (;;) {
         if (!m_nNextBlockSize) {
             if (m_pTcpSocket->bytesAvailable() < sizeof(quint16)) {
@@ -56,6 +59,7 @@ void MainWindow::slotReadyRead()
         QTime   time;
         QString str;
         in >> time >> str;
+        qDebug() << time << str;
 
         ui->m_ptxtInfo->append(time.toString() + " " + str);
         m_nNextBlockSize = 0;
@@ -80,7 +84,7 @@ void MainWindow::slotSendToServer()
 {
     QByteArray  arrBlock;
     QDataStream out(&arrBlock, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_2);
+    out.setVersion(QDataStream::Qt_DefaultCompiledVersion);
     out << quint16(0) << QTime::currentTime() << ui->m_ptxtInput->text();
 
     out.device()->seek(0);
@@ -186,4 +190,68 @@ void MainWindow::on_downloadBtn_clicked()
     QDir sDir = QDir(fileInfo.path());
     QDir dDir = QDir("/home/helena/Загрузки/Client");
     Copy(fileInfo,sDir,dDir);
+}
+
+void MainWindow::slotSendFile()
+{
+    QModelIndex index = ui->listIm->selectionModel()->currentIndex();
+    QFileInfo fileInfo = model->fileInfo(index);
+    QString path = fileInfo.absoluteFilePath();
+    if(fileInfo.isFile())
+    {
+        QFile file(path);
+//    QString filePathName = ui->le_filePath->text();
+//    QStringList filePath = filePathName.split("/");
+
+//    QFile file(ui->le_filePath->text());
+        QByteArray q;
+        int i = 0;
+        QByteArray block;
+        QByteArray arrBlock;
+        QByteArray junk("!@#Rtasd#$%sdfs!!!)()334rrer");
+        QList<QByteArray> Blocks;
+        if (file.open(QIODevice::ReadOnly)) {
+//            qDebug() << file.isReadable();
+            QString Name = fileInfo.fileName();
+
+            QDataStream out(&arrBlock, QIODevice::WriteOnly);
+            out.setVersion(QDataStream::Qt_DefaultCompiledVersion);
+
+            out /*<< quint16(0)*/ /*<< quint8(filesend)*/ << QTime::currentTime()
+                <<Name << fileInfo.size();
+
+            out.device()->seek(0);
+            out << quint16(arrBlock.size() - sizeof(quint16));
+            m_pTcpSocket->write(arrBlock);
+            m_pTcpSocket->waitForBytesWritten();
+
+            while (!file.atEnd())
+            {
+                q = file.readAll();
+                file.close();
+            }
+//            Blocks = q.split('\n');
+            int pos = 0, arrsize = q.size(), sizeInArray = 512;
+            while(pos<arrsize){
+                QByteArray arr = q.mid(pos, sizeInArray);
+                Blocks << arr;
+                pos+=arr.size();
+            }
+
+            foreach (block, Blocks) {
+
+                m_pTcpSocket->write(block);
+                m_pTcpSocket->waitForBytesWritten();
+                if (block == Blocks.last()) {
+                    qDebug() << "sended!";
+                    m_pTcpSocket->write(junk);
+                    m_pTcpSocket->waitForBytesWritten();
+                    block.clear();
+                }
+                q.clear();
+                i++;
+                ui->prBrfileSend->setValue(i/Blocks.size()*100);
+            }
+        }
+    }
 }

@@ -40,6 +40,7 @@ private slots:
     void slotError(QAbstractSocket::SocketError err);
     void slotSendToServer();
     void slotConnected();
+    void slotSendFile();
     void on_listIm_doubleClicked(const QModelIndex &index);
     void on_viewButton_clicked();
     void on_downloadBtn_clicked();
